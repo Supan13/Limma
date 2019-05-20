@@ -1,0 +1,75 @@
+---
+title: "limma"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+__limma on v3-v1 (follow-up - baseline)__
+
+
+```{r}
+data <- read.csv("v3_v1_med_vs_he.csv",row.names=1)
+dim(data)
+group <- read.csv("v3_v1_med_vs_he_group.csv")
+
+library(limma)
+Group <- factor(group$Group, levels=c("Med","HE"))
+Group
+design <- model.matrix(~0+Group)
+design
+colnames(design) <- c("Med","HE")
+
+fit <- lmFit(data,design)
+fit <- eBayes(fit)
+
+contrast.matrix <- makeContrasts( Med.vs.HE=Med-HE, levels=design)
+
+fit2 <- contrasts.fit(fit, contrast.matrix)
+
+fit2.eBayes <- eBayes(fit2)
+
+tab2 <- as.data.frame(fit2.eBayes)
+
+tt1 <- topTable(fit2.eBayes,number=Inf)
+
+write.csv(tt1,file="v3_v1_med_vs_he_diff_exp_all.csv")
+
+
+p <- tt1[tt1$P.Value < 0.05,]
+write.csv(p,file="v3_v1_med_vs_he_diff_exp_p_0.05.csv")
+
+p1 <- tt1[tt1$P.Value < 0.01,]
+write.csv(p1,file="v3_v1_med_vs_he_diff_exp_p_0.01.csv")
+```
+
+__HEATMAP OF DIFF EXP GENES__
+
+
+
+
+
+```{r}
+heat <- read.csv("v3_v1_med_vs_he_heatmap_input_p_0.05.csv",row.names = 1)
+```
+
+```{r}
+library(ggplot2)
+library(gplots)
+groups <- c(rep("Med",38),rep("HE",48))
+
+coloursSamples <- factor(groups, levels=c("Med","HE"))
+coloursSamples <- colorRampPalette(c("royalblue", "orange"))(length(unique(coloursSamples)))[factor(coloursSamples)]
+
+
+heatmap.2(as.matrix(heat),scale="row",trace="none",Colv=T, ColSideColors=coloursSamples,dendrogram="row",breaks=seq(-1, 1,0.01),col=greenred(200),        margin=c(3,12),cexRow=0.5,key=FALSE,labCol = FALSE)
+
+
+#SECOND HEATMAP
+heatmap.2(as.matrix(heat),scale="row",trace="none",Colv=F, ColSideColors=coloursSamples,dendrogram="row",breaks=seq(-1, 1,0.01),col=greenred(200),        margin=c(3,12),cexRow=0.5,key=FALSE,labCol = FALSE)
+
+```
